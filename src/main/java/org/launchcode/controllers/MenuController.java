@@ -1,16 +1,15 @@
 package org.launchcode.controllers;
 
+import org.launchcode.models.Cheese;
 import org.launchcode.models.Menu;
 import org.launchcode.models.data.CheeseDao;
 import org.launchcode.models.data.MenuDao;
+import org.launchcode.models.forms.AddMenuItemForm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
@@ -56,6 +55,33 @@ public class MenuController {
         model.addAttribute(menu);
         model.addAttribute("title", menu.getName());
         return "menu/view";
+    }
+
+    @RequestMapping(value = "add-item/{id}", method = RequestMethod.GET)
+    public String addItem(Model model, @PathVariable int id) {
+        Menu menu = menuDao.findOne(id);
+        model.addAttribute("form", new AddMenuItemForm(menu, cheeseDao.findAll()));
+        model.addAttribute("cheeses", cheeseDao.findAll());
+        model.addAttribute("title", "Add item to menu: " + menu.getName());
+        return "menu/add-item";
+    }
+
+    @RequestMapping(value = "add-item/{id}", method = RequestMethod.POST)
+    public String addItem(Model model, @PathVariable int id,
+                          @RequestParam int cheeseId,
+                          @ModelAttribute @Valid AddMenuItemForm newAddMenuItemForm,
+                          Errors errors) {
+        if (errors.hasErrors()) {
+            Menu menu = menuDao.findOne(id);
+            model.addAttribute("title","Add item to menu: " + menu.getName());
+            model.addAttribute("form", new AddMenuItemForm(menu, cheeseDao.findAll()));
+            return "menu/add-item";
+        } else {
+            Cheese newCheese = cheeseDao.findOne(cheeseId);
+            Menu menu = menuDao.findOne(id);
+            menu.addItem(newCheese);
+            menuDao.save(menu);
+            return "redirect:/menu/view/" + menu.getId();        }
     }
 
 }
